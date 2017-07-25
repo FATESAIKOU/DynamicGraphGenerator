@@ -3,22 +3,49 @@ import java.util.*;
 public class PredictNextApp
 {
     private Integer counter = 0;
-    private HashMap<String, Integer> app_dict; // Installed: value >=0, Not Installed: value < 0
+    private HashMap<String, Integer> app_dict = new HashMap<String, Integer>();
+    private HashMap<Integer, String> app_rdict = new HashMap<Integer, String>();
+    private Set<Integer> app_delete_set = new HashSet<Integer>();
 
-    private HashMap<Integer, HashMap<Integer, Integer>> app_entry;
+    private HashMap<Integer, HashMap<Integer, Integer>> app_entry = new HashMap<Integer, HashMap<Integer, Integer>>();
 
     public static void main(String[] args)
     {
-        System.out.println("Hello World");
+        PredictNextApp pna = new PredictNextApp();
+        
+        pna.addApp("test1");
+        pna.addApp("test2");
+        pna.addApp("test3");
+        pna.addApp("test4");
+        pna.addApp("test5");
+        pna.addApp("test6");
+        
+        pna.addEdge("test1", "test2");
+        pna.addEdge("test1", "test3");
+        pna.addEdge("test1", "test4");
+        pna.addEdge("test1", "test5");
+        pna.addEdge("test1", "test6");
+
+        HashMap<Integer, Integer> example = pna.getNexts("test1");
+        
+        // Dump Key
+        for (Integer id: example.keySet()) {
+            String name = pna.app_rdict.get(id);
+            String value = example.get(id).toString();
+            System.out.println(name + " " + value);
+        }
+
+        System.out.println("Hello World ");
     }
 
 
-    public HashMap<Integer, Integer> getNextList(String app_name)
+    public HashMap<Integer, Integer> getNexts(String app_name)
     {
-        if ( isInstalled(app_name) ) {
+        if ( isInstalled( app_name ) ) {
             return app_entry.get( app_dict.get(app_name) );
         } else {
             // raise exception
+            System.out.println("g-Not Install : " + app_name);
             return null;
         }
     }
@@ -26,23 +53,22 @@ public class PredictNextApp
     
     private void addApp(String app_name)
     {
-        if ( ! app_dict.containsKey(app_name) ) {
-            ++ counter;
-
-            // Create App Id & App Entry
-            app_dict.put(app_name, counter);
-            app_entry.put(counter, new HashMap<Integer, Integer>());
-
-        } else {
-            int app_id = app_dict.get(app_name);
-
-            if (app_id > 0) {
-                // raise exception
-                return;
-            }
+        if ( !app_dict.containsKey( app_name ) ) {
             
-            // Set Back App Id to positive.
-            app_dict.put(app_name, app_id * -1);
+            ++ counter;
+            app_dict.put(app_name, counter);
+            app_rdict.put(counter, app_name);
+
+            app_entry.put(
+                counter,
+                new HashMap<Integer, Integer>()
+            );
+
+        } else if ( app_delete_set.contains( app_dict.get(app_name) ) ) {
+            app_delete_set.remove( app_dict.get(app_name) );
+        } else {
+            System.out.println("a-Installed: " + app_name);
+            // raise exception
         }
     }
 
@@ -50,11 +76,9 @@ public class PredictNextApp
     private void deleteApp(String app_name)
     {
         if ( isInstalled(app_name) ) {
-            app_dict.put(
-                app_name,
-                app_dict.get(app_name) * -1
-            );
+            app_delete_set.add( app_name.hashCode() );
         } else {
+            System.out.println("d-Not Installed: " + app_name);
             // raise exception
         }
     }
@@ -63,6 +87,7 @@ public class PredictNextApp
     private void addEdge(String from, String to)
     {
         if ( !isInstalled(from) || !isInstalled(to) ) {
+            System.out.println("aE-Not Installed: " + from + " / " + to);
             // raise exception
             return;
         }
@@ -81,6 +106,7 @@ public class PredictNextApp
 
     private boolean isInstalled(String app_name)
     {
-        return app_dict.containsKey(app_name) && app_dict.get(app_name) >= 0;
+        return app_dict.containsKey(app_name) &&
+            !app_delete_set.contains( app_dict.get(app_name) );
     }
 }
