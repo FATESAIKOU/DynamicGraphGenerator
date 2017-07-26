@@ -3,12 +3,10 @@ import java.util.*;
 
 public class PredictNextApp
 {
-    private Integer counter = 0;
-    private HashMap<String, Integer> app_dict = new HashMap<String, Integer>();
-    private HashMap<Integer, String> app_rdict = new HashMap<Integer, String>();
-    private Set<Integer> app_delete_set = new HashSet<Integer>();
+    private Set<String> app_delete_set = new HashSet<String>();
 
-    private HashMap<Integer, HashMap<Integer, Integer>> app_entry = new HashMap<Integer, HashMap<Integer, Integer>>();
+    private HashMap<String, HashMap<String, Integer>> bi_app_entry = new HashMap<String, HashMap<String, Integer>>();
+    private HashMap<String, HashMap<String, HashMap<String, Integer>>> tri_app_entry = new HashMap<String, HashMap<String, HashMap<String, Integer>>>();
 
     public static void main(String[] args)
     {
@@ -36,7 +34,7 @@ public class PredictNextApp
                 switch (command.charAt(0)) {
                     case '0':
                         next_app = in.nextLine();
-                        pna.addEdge(next_app, app_queue.get(0));
+                        pna.addEdge(next_app, app_queue.get(1));
                         pna.addEdge(next_app, app_queue.get(0), app_queue.get(1));
                         app_queue.add(next_app);
                         app_queue.remove(0);
@@ -71,10 +69,10 @@ public class PredictNextApp
                         is_queried = 1;
                         query_count ++;
                         
-                        HashMap<Integer, Double> result = pna.query( app_queue.get(0), app_queue.get(1) );
-                        if (result.size() > 0) {
-                            Integer app_id = Collections.max(result.entrySet(), Map.Entry.comparingByValue()).getKey();
-                            predict_answer = pna.app_rdict.get(app_id);
+                        HashMap<String, Double> result = pna.query( app_queue.get(0), app_queue.get(1) );
+                        //HashMap<String, Double> result = pna.query( app_queue.get(1) );
+                        if (result != null && result.size() > 0) {
+                            predict_answer = Collections.max(result.entrySet(), Map.Entry.comparingByValue()).getKey();
                         } else {
                             System.out.println("<<<Nothing to predict.>>>");
                             predict_answer = "";
@@ -90,47 +88,98 @@ public class PredictNextApp
         }
     }
 
-    public static <T1, T2, T3> void dumpMap(HashMap<T1, T2> example, HashMap<T1, T3> name_dict)
+    public HashMap<String, Double> query(String... query_strings)
     {
-        for (T1 key: example.keySet()) {
-            T3 name = name_dict.get(key);
-            T2 value = example.get(key);
-            System.out.println(name + " " + value);
-        }
-    }
-
-    public HashMap<Integer, Double> query(String... query_strings)
-    {
-        Integer app_list_id = genAppListId(query_strings, false);
-
-        if (app_list_id == -1) {
-            return new HashMap<Integer, Double>();
+        if ( !promiseHavenBeenInstalled(query_strings) ) {
+            System.out.println("[Exception] Querid app haven been installed or invalid chain length!");
+            return null;   
         }
 
-        return getProbabilities( app_list_id );
+        HashMap<String, Integer> count_map;
+        switch (query_strings.length) {
+            case 1:
+                count_map = bi_app_entry.get(query_strings[0]);
+                break;
+            case 2:
+                count_map = tri_app_entry.get(query_strings[0])
+                                         .get(query_strings[1]);
+                break;
+            default:
+                return null;
+        }
+
+        if (count_map == null) {
+            return null;
+        }
+
+        return getProbabilities( count_map );
     }
 
-    private HashMap<Integer, Double> getProbabilities(Integer entry_id)
+    public void addApp(String app_name)
     {
-        HashMap<Integer, Double> probabilities = new HashMap<Integer, Double>();
+        if ( !bi_app_entry.containsKey( app_name ) && !tri_app_entry.containsKey( app_name ) ) {
+            bi_app_entry.put(
+                app_name,
+                new HashMap<String, Integer>()
+            );
 
-        // Get Count Sum
-        Integer total_count = 0;
-        HashMap<Integer, Integer> tmp_counts = app_entry.get(entry_id);
+            tri_app_entry.put(
+                app_name,
+                new HashMap<String, HashMap<String, Integer>>()
+            );
+        } else if ( app_delete_set.contains( app_name ) ) {
+            app_delete_set.remove( app_name );
+        } else {
+            System.out.println("[Exception] Install targe was installed: " + app_name);
+            // raise exception
+        }
+    }
     
-        if (tmp_counts == null) {
-            return probabilities;
+    public void deleteApp(String app_name)
+    {
+        if ( isInstalled(app_name) ) {
+            app_delete_set.add( app_name );
+        } else {
+            System.out.println("[Exception] Delete targe wasn't installed: " + app_name);
+            // raise exception
+        }
+    }
+
+    public void addEdge(String to, String... froms)
+    {
+        if ( !promiseHavenBeenInstalled(froms) || !isInstalled(to) ) {
+            System.out.println("[Excepion] AddEdge-Not Installed: " + froms + " / " + to);
+
+            return;
+        }
+   
+        HashMap<String, Integer> aim_map = promiseMap(froms);
+
+        Integer update_value = 1;
+        if ( aim_map.containsKey(to) ) {
+            update_value = aim_map.get(to) + 1 ; 
         }
 
-        for (Integer next_app_id: tmp_counts.keySet()) {
-            if ( !app_delete_set.contains(next_app_id)) {
-                total_count += tmp_counts.get(next_app_id);
+        aim_map.put(to, update_value);
+    }
+
+
+    // Utils
+    private HashMap<String, Double> getProbabilities(HashMap<String, Integer> count_map)
+    {
+        HashMap<String, Double> probabilities = new HashMap<String, Double>();
+
+        // Count Total Appearance
+        Integer total_count = 0;
+        for (String next_app: count_map.keySet()) {
+            if ( !app_delete_set.contains(next_app)) {
+                total_count += count_map.get(next_app);
             }
         }
 
         // Caculate Probabilities
-        for (Map.Entry<Integer, Integer> entry: app_entry.get(entry_id).entrySet()) {
-            if ( !app_delete_set.contains(entry.getKey())) {
+        for (Map.Entry<String, Integer> entry: count_map.entrySet()) {
+            if ( !app_delete_set.contains(entry.getKey()) ) {
                 probabilities.put(
                     entry.getKey(),
                     entry.getValue() / (total_count * 1.0)
@@ -140,88 +189,40 @@ public class PredictNextApp
 
         return probabilities;
     }
-
     
-    private void addApp(String app_name)
+    private boolean promiseHavenBeenInstalled(String[] app_list)
     {
-        if ( !app_dict.containsKey( app_name ) ) {
-            
-            ++ counter;
-            app_dict.put(app_name, counter);
-            app_rdict.put(counter, app_name);
-
-            app_entry.put(
-                counter,
-                new HashMap<Integer, Integer>()
-            );
-
-        } else if ( app_delete_set.contains( app_dict.get(app_name) ) ) {
-            app_delete_set.remove( app_dict.get(app_name) );
-        } else {
-            System.out.println("[Exception] Install targe was installed: " + app_name);
-            // raise exception
+        switch (app_list.length) {
+            case 1:
+                return bi_app_entry.containsKey(app_list[0]);
+            case 2:
+                return tri_app_entry.containsKey(app_list[0]) &&
+                    tri_app_entry.containsKey(app_list[1]);
+            default:
+                return false;
         }
     }
 
-    
-    private void deleteApp(String app_name)
+    private HashMap<String, Integer> promiseMap(String[] app_list)
     {
-        if ( isInstalled(app_name) ) {
-            app_delete_set.add( app_dict.get(app_name) );
-        } else {
-            System.out.println("[Exception] Delete targe wasn't installed: " + app_name);
-            // raise exception
-        }
-    }
+        switch (app_list.length) {
+            case 1:
+                return bi_app_entry.get(app_list[0]);
+            case 2:
+                if ( !tri_app_entry.get(app_list[0]).containsKey(app_list[1]) ) {
+                    tri_app_entry.get(app_list[0]).put(
+                        app_list[1],
+                        new HashMap<String, Integer>()
+                    );
+                }
 
-
-    private void addEdge(String to, String... froms)
-    {
-        if ( !isAppListInstalled(froms) || !isInstalled(to) ) {
-            System.out.println("AddEdge-Not Installed: " + froms + " / " + to);
-
-            return;
-        }
-    
-        Integer from_id = genAppListId(froms, true);
-        Integer to_id = app_dict.get(to);
-
-        Integer update_value = 1;
-        if ( !app_entry.containsKey(from_id) ) {
-            app_entry.put(from_id, new HashMap<Integer, Integer>());
-        }
-
-        if ( app_entry.get(from_id).containsKey(to_id) ) {
-            update_value = app_entry.get(from_id).get(to_id) + 1 ; 
-        }
-
-        app_entry.get(from_id).put(to_id, update_value);
-    }
-
-
-    /*
-     * Add Mode => add entry or not while id not found.
-     */
-    private Integer genAppListId(String[] app_list, boolean addMode)
-    {
-        String union_str = String.join(", ", app_list);
-
-        if ( !app_dict.containsKey(union_str) ) {
-            if ( addMode ) {
-                ++ counter;
-                app_dict.put(union_str, counter);
-            } else {
+                return tri_app_entry.get(app_list[0]).get(app_list[1]);
+            default:
                 // raise exception
-                System.out.println("[Exception] Queried app_list not found");
-                return -1;
-            }
+                System.out.println("[Exception] PrmiseMap-error chain size!!");
+                return null;
         }
-
-        Integer app_list_id = app_dict.get(union_str);
-
-        return app_list_id;
     }
-
 
     private boolean isAppListInstalled(String[] app_names)
     {
@@ -234,10 +235,10 @@ public class PredictNextApp
         return true;
     }
     
-
     private boolean isInstalled(String app_name)
     {
-        return app_dict.containsKey(app_name) &&
-            !app_delete_set.contains( app_dict.get(app_name) );
+        return bi_app_entry.containsKey(app_name) &&
+            tri_app_entry.containsKey(app_name) &&
+            !app_delete_set.contains( app_name );
     }
 }
