@@ -14,10 +14,10 @@ public class PredictNextApp
     {
         PredictNextApp pna = new PredictNextApp();
         List<String> app_queue = new ArrayList<String>();
-        app_queue.add("Home");
-        app_queue.add("Home");
+        app_queue.add(" HOME");
+        app_queue.add(" HOME");
         String next_app;
-        pna.addApp("Home");
+        pna.addApp(" HOME");
 
         Integer is_queried = 0;
         Integer currect_count = 0;
@@ -36,17 +36,19 @@ public class PredictNextApp
                 switch (command.charAt(0)) {
                     case '0':
                         next_app = in.nextLine();
-                        pna.addEdge(app_queue.subList(1, 2), next_app);
-                        pna.addEdge(app_queue, next_app);
+                        pna.addEdge(next_app, app_queue.get(0));
+                        pna.addEdge(next_app, app_queue.get(0), app_queue.get(1));
                         app_queue.add(next_app);
                         app_queue.remove(0);
 
                         if (is_queried == 1) {
                             is_queried = 0;
 
-                            System.out.println(next_app + " : " + predict_answer);
+                            System.out.println(predict_answer + ":" + next_app);
                             if (next_app.equals(predict_answer)) {
                                 currect_count ++;
+                            } else {
+                                //System.err.println("Line <" + line + "> " + next_app + " : " + predict_answer);
                             }
                         }
 
@@ -63,13 +65,13 @@ public class PredictNextApp
                         break;
 
                     case 'q':
-                        System.out.print("At " + line + ": " + app_queue + " ");
+                        System.out.print("At " + line + ": " + app_queue.subList(0, 2) + " ");
                         in.nextLine();
 
                         is_queried = 1;
                         query_count ++;
                         
-                        HashMap<Integer, Double> result = pna.query( app_queue );
+                        HashMap<Integer, Double> result = pna.query( app_queue.get(0), app_queue.get(1) );
                         if (result.size() > 0) {
                             Integer app_id = Collections.max(result.entrySet(), Map.Entry.comparingByValue()).getKey();
                             predict_answer = pna.app_rdict.get(app_id);
@@ -82,6 +84,7 @@ public class PredictNextApp
             }
             
             System.out.println("Currect Count = " + currect_count + " / " + query_count);
+            System.out.println(" - " + currect_count + " / " + query_count + " = " + currect_count / (query_count * 1.0));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -96,7 +99,7 @@ public class PredictNextApp
         }
     }
 
-    public HashMap<Integer, Double> query(List<String> query_strings)
+    public HashMap<Integer, Double> query(String... query_strings)
     {
         Integer app_list_id = genAppListId(query_strings, false);
 
@@ -172,7 +175,7 @@ public class PredictNextApp
     }
 
 
-    private void addEdge(List<String> froms, String to)
+    private void addEdge(String to, String... froms)
     {
         if ( !isAppListInstalled(froms) || !isInstalled(to) ) {
             System.out.println("AddEdge-Not Installed: " + froms + " / " + to);
@@ -199,7 +202,7 @@ public class PredictNextApp
     /*
      * Add Mode => add entry or not while id not found.
      */
-    private Integer genAppListId(List<String> app_list, boolean addMode)
+    private Integer genAppListId(String[] app_list, boolean addMode)
     {
         String union_str = String.join(", ", app_list);
 
@@ -220,7 +223,7 @@ public class PredictNextApp
     }
 
 
-    private boolean isAppListInstalled(List<String> app_names)
+    private boolean isAppListInstalled(String[] app_names)
     {
         for (String app_name: app_names) {
             if ( !isInstalled(app_name) ) {
