@@ -80,7 +80,7 @@ public class NGram
         createEdge( indexes );
     }
 
-    public HashMap<String, Integer> query(String... app_list)
+    public HashMap<String, Double> query(String... app_list)
     {
         if ( !isListEverInstalled(app_list) ) {
             // raise exception [Error: Queried for Never Installed App]
@@ -94,16 +94,16 @@ public class NGram
             return null;
         }
 
-        return getCounts( Arrays.asList(app_list) );
+        return getProbabilities( getCounts( Arrays.asList(app_list) ) );
     }
 
-    public void dump(String padding)
+    public void dumpModel(String padding)
     {
         System.out.println(padding + "{");
         if (depth > 1) {
             for (String gram_key: gram_map.keySet()) {
                 System.out.println(padding + " \"" + gram_key + "\":");
-                gram_map.get(gram_key).dump(padding + "  ");
+                gram_map.get(gram_key).dumpModel(padding + "  ");
             }
         } else {
             for (String count_key: count_map.keySet()) {
@@ -114,7 +114,37 @@ public class NGram
         System.out.println(padding + "}");
     }
 
+
     // Utils
+    private HashMap<String, Double> getProbabilities(HashMap<String, Integer> _count_map)
+    {
+        if ( _count_map == null ) {
+            return null;
+        }
+
+        HashMap<String, Double> probabilities = new HashMap<String, Double>();
+
+        // Count Total Appearance
+        Integer total_count = 0;
+        for (String next_app: _count_map.keySet()) {
+            if ( !delete_set.contains(next_app)) {
+                total_count += _count_map.get(next_app);
+            }
+        }
+
+        // Caculate Probabilities
+        for (Map.Entry<String, Integer> entry: _count_map.entrySet()) {
+            if ( !delete_set.contains(entry.getKey()) ) {
+                probabilities.put(
+                    entry.getKey(),
+                    entry.getValue() / (total_count * 1.0)
+                );
+            }
+        }
+
+        return probabilities;
+    }
+
     private HashMap<String, Integer> getCounts(List<String> indexes)
     {
         if ( depth > 1 ) {
