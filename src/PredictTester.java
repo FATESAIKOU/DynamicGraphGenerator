@@ -1,9 +1,10 @@
 import java.io.*;
 import java.util.*;
+import org.json.*;
 
 public class PredictTester
 {
-    private Predictor predictor = new Predictor();
+    private Predictor predictor;
     private List<String> states = new ArrayList<String>();
 
     private boolean queried    = false;
@@ -14,30 +15,52 @@ public class PredictTester
     private String bi_answer   = "";
     private String tri_answer  = "";
 
-
     public static void main(String[] args)
     {
-        PredictTester pt = init();
+        PredictTester pt;
+        // Load Model or not
+        if (args.length > 2) {
+            pt = new PredictTester(args[2]);
+        } else {
+            pt = new PredictTester();
+        }
+        
+        // Initialize enviroment
+        init(pt);
 
-        if (args.length > 2)
-            pt.predictor.load(args[2]);
-
+        // Processing
         pt.process(args[1]);
+
+        // Get Report
         pt.report();
         
-        if (args.length > 3)
+        // Save Model
+        if (args.length > 3) {
             pt.predictor.dump(args[3]);
+        }
     }
 
-    public static PredictTester init()
+    public PredictTester()
     {
-        PredictTester pt = new PredictTester();
+        predictor = new Predictor();
+    }
+
+    public PredictTester(String filename)
+    {
+        try {
+            predictor = new Predictor(filename);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void init(PredictTester pt)
+    {
         pt.predictor.install(" HOME");
-
         pt.states.add(" HOME");
         pt.states.add(" HOME");
-
-        return pt;
     }
 
     private void process(String filename)

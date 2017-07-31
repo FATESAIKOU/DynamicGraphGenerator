@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.json.*;
 
 public class State implements Comparable<State> {
     private Map<String, State> routes;
@@ -14,9 +15,26 @@ public class State implements Comparable<State> {
         this.name = name;
     }
 
-    public void walk(String[] path, int weight, int idx) {
+    public State(JSONObject mdl) throws JSONException {
+        name = mdl.getString("name");
+        count = mdl.getInt("count");
+
+        if (mdl.has("routes")) {
+            routes = new HashMap<>();
+
+            JSONArray mdl_arr = mdl.getJSONArray("routes");
+            for (int i = 0; i < mdl_arr.length(); ++ i) {
+                JSONObject sub_mdl = mdl_arr.getJSONObject(i);
+
+                String key = sub_mdl.getString("name");
+                routes.put(key, new State(sub_mdl));
+            }
+        }
+    }
+
+    public void walk(String[] path, int idx) {
         if (idx == path.length) {
-            count += weight;
+            ++ count;
         } else {
             if (routes == null)
                 routes = new HashMap<>();
@@ -27,7 +45,7 @@ public class State implements Comparable<State> {
                 state = new State(key);
                 routes.put(key, state);
             }
-            state.walk(path, weight, idx + 1);
+            state.walk(path, idx + 1);
         }
     }
 
@@ -66,37 +84,24 @@ public class State implements Comparable<State> {
         return count;
     }
 
-    public String dump(String now_path) {
-        String result = new String();
-        if (count > 0) {
-            result += now_path + count + '\n';
-        }
+    public JSONObject dump() {
+        JSONObject model = new JSONObject();
 
-        if (routes != null) {
-            for (State s : routes.values()) {
-                result += s.dump(now_path + s.getName() + "/");
-            }
-        }
-
-        return result;
-    }
+        try {
+            model.put("name", name);
+            model.put("count", count);
     
-    public String dumpJson(String padding) {
-        String result = new String();
-
-        result += padding + "{\n";
-        result += padding + "\t\"name\": \"" + name + "\",\n";
-        result += padding + "\t\"count\": " + count + ",\n";
-        result += padding + "\t\"routes\": [\n";
-        if (routes != null) {
-            for (State s : routes.values()) {
-                result += s.dumpJson(padding + "\t\t") + ",\n";
+            if (routes != null) {
+                JSONArray routes_json = new JSONArray();
+                for (State s : routes.values()) {
+                    routes_json.put(s.dump());
+                }
+                model.put("routes", routes_json);
             }
-            result = result.substring(0, result.length() - 2) + '\n';
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
-        result += padding + "\t]\n";
-        result += padding + "}";
 
-        return result;
+        return model;
     }
 }

@@ -6,13 +6,33 @@ import java.util.HashMap;
 import java.util.Arrays;
 import java.util.Scanner;
 import java.io.*;
+import org.json.*;
 
 public class Predictor {
-    private final State state_gram = new State("START");
+    private final State state_gram;
     private final Set<String> uninstall = new HashSet<>();
 
+    public Predictor() {
+        state_gram = new State("START");
+    }
+
+    public Predictor(String file_path) throws IOException, JSONException {
+        // Create File Reader
+        File file = new File(file_path);
+        FileInputStream fis = new FileInputStream(file);
+
+        // Get File Content
+        byte[] data = new byte[(int) file.length()];
+        fis.read(data);
+        fis.close();
+
+        // Create State
+        JSONObject model = new JSONObject(new String(data, "UTF-8"));
+        state_gram = new State(model);
+    }
+
     public void walk(String[] path) {
-        state_gram.walk(path, 1, 0);
+        state_gram.walk(path, 0);
     }
 
     public void install(String packageName) {
@@ -32,38 +52,8 @@ public class Predictor {
     public void dump(String file_path) {
         try {
             PrintWriter out = new PrintWriter(file_path, "UTF-8");
-            out.print(state_gram.dump(""));
+            out.print(state_gram.dump().toString());
             out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void dumpJson(String file_path) {
-        try {
-            PrintWriter writer = new PrintWriter(file_path, "UTF-8");
-            writer.print(state_gram.dumpJson(""));
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void load(String file_path) {
-        try {
-            File file = new File(file_path);
-            Scanner in = new Scanner(file);
-            
-            String[] tmps;
-            String[] path;
-            int count;
-            while (in.hasNextLine()) {
-                tmps = in.nextLine().split("/");
-                path = Arrays.copyOfRange(tmps, 0, tmps.length - 1);
-                count = Integer.parseInt(tmps[tmps.length - 1]);
-
-                state_gram.walk(path, count, 0);
-            }
         } catch (IOException e) {
             e.printStackTrace();
         }
