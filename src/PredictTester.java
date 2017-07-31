@@ -22,6 +22,11 @@ public class PredictTester
         p.install(" HOME");
         String next_app;
 
+        // load model
+        if (args.length > 2) {
+            p.load(args[2]);
+        }
+
         try {
             File file = new File(args[1]);
             Scanner in = new Scanner(file);
@@ -41,7 +46,6 @@ public class PredictTester
                         if (is_queried) {
                             is_queried = !is_queried;
 
-                            //System.out.println(bi_answer + "-" + tri_answer + ":" + next_app);
                             bi_currect += next_app.equals(bi_answer) ? 1 : 0;
                             tri_currect += next_app.equals(tri_answer) ? 1 : 0;
                         }
@@ -59,7 +63,6 @@ public class PredictTester
 
                     case 'q':
                         in.nextLine();
-                        //System.out.print("At line " + line + ":");
 
                         is_queried = true;
                         query_count ++;
@@ -71,8 +74,15 @@ public class PredictTester
             
             System.out.println("Bigram Currect Count = " + bi_currect + " / " + query_count + " = " + bi_currect / (query_count * 1.0));
             System.out.println("Trigram Currect Count = " + tri_currect + " / " + query_count + " = " + tri_currect / (query_count * 1.0));
+
+            in.close();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
+        }
+
+        // save model
+        if (args.length > 3) {
+            p.dump(args[3]);
         }
     }
 }

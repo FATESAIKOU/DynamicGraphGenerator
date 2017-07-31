@@ -14,9 +14,9 @@ public class State implements Comparable<State> {
         this.name = name;
     }
 
-    public void walk(String[] path, int idx) {
+    public void walk(String[] path, int weight, int idx) {
         if (idx == path.length) {
-            ++count;
+            count += weight;
         } else {
             if (routes == null)
                 routes = new HashMap<>();
@@ -27,7 +27,7 @@ public class State implements Comparable<State> {
                 state = new State(key);
                 routes.put(key, state);
             }
-            state.walk(path, idx + 1);
+            state.walk(path, weight, idx + 1);
         }
     }
 
@@ -66,11 +66,37 @@ public class State implements Comparable<State> {
         return count;
     }
 
-    public void dump() {
-        System.out.println("name=" + name + ", count=" + count);
-    }
+    public String dump(String now_path) {
+        String result = new String();
+        if (count > 0) {
+            result += now_path + count + '\n';
+        }
 
-    public void dump(int total) {
-        System.out.println("name=" + name + ", count=" + count + ", prob=" + ((double) count / (double) total));
+        if (routes != null) {
+            for (State s : routes.values()) {
+                result += s.dump(now_path + s.getName() + "/");
+            }
+        }
+
+        return result;
+    }
+    
+    public String dumpJson(String padding) {
+        String result = new String();
+
+        result += padding + "{\n";
+        result += padding + "\t\"name\": \"" + name + "\",\n";
+        result += padding + "\t\"count\": " + count + ",\n";
+        result += padding + "\t\"routes\": [\n";
+        if (routes != null) {
+            for (State s : routes.values()) {
+                result += s.dumpJson(padding + "\t\t") + ",\n";
+            }
+            result = result.substring(0, result.length() - 2) + '\n';
+        }
+        result += padding + "\t]\n";
+        result += padding + "}";
+
+        return result;
     }
 }
