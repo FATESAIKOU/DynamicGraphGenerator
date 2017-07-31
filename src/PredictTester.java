@@ -3,86 +3,112 @@ import java.util.*;
 
 public class PredictTester
 {
+    private Predictor predictor = new Predictor();
+    private List<String> states = new ArrayList<String>();
+
+    private boolean queried    = false;
+    private int now_at         = 0;
+    private int query_count    = 0;
+    private int bi_currect     = 0;
+    private int tri_currect    = 0;
+    private String bi_answer   = "";
+    private String tri_answer  = "";
+
+
     public static void main(String[] args)
     {
-        Predictor p = new Predictor();
+        PredictTester pt = init();
 
-        boolean is_queried = false;
+        if (args.length > 2)
+            pt.predictor.load(args[2]);
 
-        int line          = 0;
-        int query_count   = 0;
-        int bi_currect    = 0;
-        int tri_currect   = 0;
-        String bi_answer  = null;
-        String tri_answer = null;
+        pt.process(args[1]);
+        pt.report();
         
-        List<String> states = new ArrayList<String>();
-        states.add(" HOME");
-        states.add(" HOME");
-        p.install(" HOME");
-        String next_app;
+        if (args.length > 3)
+            pt.predictor.dump(args[3]);
+    }
 
-        // load model
-        if (args.length > 2) {
-            p.load(args[2]);
-        }
+    public static PredictTester init()
+    {
+        PredictTester pt = new PredictTester();
+        pt.predictor.install(" HOME");
 
+        pt.states.add(" HOME");
+        pt.states.add(" HOME");
+
+        return pt;
+    }
+
+    private void process(String filename)
+    {
         try {
-            File file = new File(args[1]);
+            File file = new File(filename);
             Scanner in = new Scanner(file);
-        
-            while (in.hasNext()) {
-                line ++;
-                String command = in.next();
 
-                switch (command.charAt(0)) {
-                    case '0':
-                        next_app = in.nextLine();
-                        states.add(next_app);
-                        p.walk(new String[] {states.get(1), states.get(2)});
-                        p.walk(new String[] {states.get(0), states.get(1), states.get(2)});
-                        states.remove(0);
+            while(in.hasNext()) {
+                now_at ++;
+                String op = in.next();
+                String app = in.nextLine();
 
-                        if (is_queried) {
-                            is_queried = !is_queried;
+                if (op.charAt(0) == 'q') {
+                    query();
+                } else if (op.charAt(0) == '0') {
+                    use(app);
 
-                            bi_currect += next_app.equals(bi_answer) ? 1 : 0;
-                            tri_currect += next_app.equals(tri_answer) ? 1 : 0;
-                        }
-                        break;
-
-                    case '1':
-                        next_app = in.nextLine();
-                        p.install(next_app);
-                        break;
-
-                    case '2':
-                        next_app = in.nextLine();
-                        p.uninstall(next_app);
-                        break;
-
-                    case 'q':
-                        in.nextLine();
-
-                        is_queried = true;
-                        query_count ++;
-
-                        bi_answer = p.predict(new String[] {states.get(1)});
-                        tri_answer = p.predict(new String[] {states.get(0), states.get(1)});
+                    if (queried){
+                        queried = !queried;
+                        verify(app);
+                    }
+                } else if (op.charAt(0) == '1') {
+                    install(app);
+                } else if (op.charAt(0) == '2') {
+                    uninstall(app);
                 }
             }
-            
-            System.out.println("Bigram Currect Count = " + bi_currect + " / " + query_count + " = " + bi_currect / (query_count * 1.0));
-            System.out.println("Trigram Currect Count = " + tri_currect + " / " + query_count + " = " + tri_currect / (query_count * 1.0));
 
             in.close();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
+    }
 
-        // save model
-        if (args.length > 3) {
-            p.dump(args[3]);
-        }
+    private void report()
+    {
+        System.out.println("Bigram Currect Count = " + bi_currect + " / " + query_count + " = " + bi_currect / (query_count * 1.0));
+        System.out.println("Trigram Currect Count = " + tri_currect + " / " + query_count + " = " + tri_currect / (query_count * 1.0));
+    }
+
+    private void query()
+    {
+        queried = true;
+        query_count ++;
+
+        bi_answer = predictor.predict(new String[] {states.get(1)});
+        tri_answer = predictor.predict(new String[] {states.get(0), states.get(1)});
+    }
+
+    private void use(String app)
+    {
+        states.add(app);
+        predictor.walk(new String[] {states.get(1), states.get(2)});
+        predictor.walk(new String[] {states.get(0), states.get(1), states.get(2)});
+        states.remove(0);
+    }
+
+    private void verify(String app)
+    {
+        bi_currect += app.equals(bi_answer) ? 1 : 0;
+        tri_currect += app.equals(tri_answer) ? 1 : 0;
+    }
+
+    private void install(String app)
+    {
+        predictor.install(app);
+    }
+
+    private void uninstall(String app)
+    {
+        predictor.uninstall(app);
     }
 }
