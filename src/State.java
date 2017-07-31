@@ -58,6 +58,10 @@ public class State implements Comparable<State> {
         return Integer.compare(s.count, count);
     }
 
+    public String getName() {
+        return name;
+    }
+
     public int getCount() {
         return count;
     }
