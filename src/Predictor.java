@@ -49,13 +49,9 @@ public class Predictor {
         return states != null && states.size() > 0 ? states.get(0).getName() : null;
     }
 
-    public void dump(String file_path) {
-        try {
-            PrintWriter out = new PrintWriter(file_path, "UTF-8");
-            out.print(state_gram.dump().toString());
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public void dump(String file_path) throws IOException, JSONException {
+        PrintWriter out = new PrintWriter(file_path, "UTF-8");
+        out.print(state_gram.toJSON().toString());
+        out.close();
     }
 }

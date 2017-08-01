@@ -36,7 +36,12 @@ public class PredictTester
         
         // Save Model
         if (args.length > 3) {
-            pt.predictor.dump(args[3]);
+            try {
+                pt.predictor.dump(args[3]);
+            } catch (Exception e) {
+                System.out.println("Something went wrong :)");
+                e.printStackTrace();
+            }
         }
     }
 

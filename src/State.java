@@ -84,22 +84,18 @@ public class State implements Comparable<State> {
         return count;
     }
 
-    public JSONObject dump() {
+    public JSONObject toJSON() throws JSONException {
         JSONObject model = new JSONObject();
 
-        try {
-            model.put("name", name);
-            model.put("count", count);
+        model.put("name", name);
+        model.put("count", count);
     
-            if (routes != null) {
-                JSONArray routes_json = new JSONArray();
-                for (State s : routes.values()) {
-                    routes_json.put(s.dump());
-                }
-                model.put("routes", routes_json);
+        if (routes != null) {
+            JSONArray routes_json = new JSONArray();
+            for (State s : routes.values()) {
+                routes_json.put(s.toJSON());
             }
-        } catch (JSONException e) {
-            e.printStackTrace();
+            model.put("routes", routes_json);
         }
 
         return model;
