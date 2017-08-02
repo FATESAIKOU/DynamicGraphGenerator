@@ -19,8 +19,8 @@ public class PredictTester
     {
         PredictTester pt;
         // Load Model or not
-        if (args.length > 2) {
-            pt = new PredictTester(args[2]);
+        if (args.length > 3) {
+            pt = new PredictTester(args[3]);
         } else {
             pt = new PredictTester();
         }
@@ -35,9 +35,9 @@ public class PredictTester
         pt.report();
         
         // Save Model
-        if (args.length > 3) {
+        if (args.length > 2) {
             try {
-                pt.predictor.dump(args[3]);
+                pt.predictor.dump(args[2]);
             } catch (Exception e) {
                 System.out.println("Something went wrong :)");
                 e.printStackTrace();
