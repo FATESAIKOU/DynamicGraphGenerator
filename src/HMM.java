@@ -1,3 +1,9 @@
+/*
+ * Implementation of HMM model
+ *
+ * @author: Eric Chiang
+ */
+
 import java.io.*;
 import java.util.*;
 import org.json.*;
@@ -101,6 +107,7 @@ public class HMM
         return new Scanner(seq_src);
     }
 
+    // Inner Class for query
     private class Viterbi {
         private Map<String, List<String>> __paths;
         private Map<String, List<String>> __new_paths;
@@ -149,35 +156,38 @@ public class HMM
 
             String n_emit;
             while (seq.hasNext()) {
-
                 // iterate the paramaters in Viterbi
                 iterate();
 
                 // Get next emission 
                 n_emit = seq.next();
                 
-                // Start updating the probility of states
                 String[] sub_path = new String[2];
                 State node;
                 
                 big_prob = Double.POSITIVE_INFINITY * -1;
                 big_str = null;
+
+                // Start updating all of the __new_probs and __new_paths of all the states
                 for (String now_state : __new_probs.keySet()) {
-                    // Get path to predict
+                    // Get the path for getting next transform route
                     int path_len = __paths.get(now_state).size();
                     __paths.get(now_state).subList(Math.max(path_len - 2, 0), path_len).toArray(sub_path);
 
-                    // Get next routes and count
+                    // Get next transform routes and count
                     node = trans_count.getChild(sub_path, 0);
+
+                    // If there is no route for providing path, use No-Gram route
                     if (node == null)
                         node = trans_count;
 
-                    // Caculate Probility (reversily)
+                    // update each state in the routes
                     for (State n_state : node.getRoutes().values()) {
                         String n_name = n_state.getName();
                         Double t_prob_n = Math.log(n_state.getCount() * 1.0 / node.getCount());
                         Double e_prob_n = Math.log(getEmitProb(n_name, n_emit));
 
+                        // update __new_probs and __new_paths, if the new probility is bigger than the original one.
                         if (__new_probs.get(n_name) < __probs.get(now_state) + t_prob_n + e_prob_n) {
                             big_prob = __probs.get(now_state) + t_prob_n + e_prob_n;
                             __new_probs.put(n_name, big_prob);
@@ -186,7 +196,6 @@ public class HMM
                             big_str = new ArrayList<String>(__paths.get(now_state));
                             big_str.add(now_state);
                             __new_paths.put(n_name, big_str);
-
                         }
                     }
                 }
@@ -200,11 +209,12 @@ public class HMM
         private Double getEmitProb(String state, String emission)
         {
             State emit_c_state = emit_count.getChild(new String[] {state, emission}, 0);
-            int emit_c = emit_c_state == null ? 0 : emit_c_state.getCount();
-            State emit_t_state = emit_count.getChild(new String[] {state}, 0);
-            int emit_t = emit_t_state == null ? 1 : emit_t_state.getCount();
+            int count = emit_c_state == null ? 0 : emit_c_state.getCount();
 
-            return emit_c * 1.0 / emit_t;
+            State emit_t_state = emit_count.getChild(new String[] {state}, 0);
+            int total = emit_t_state.getCount();
+
+            return count * 1.0 / total;
         }
     }
 }

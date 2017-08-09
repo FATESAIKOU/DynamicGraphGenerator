@@ -1,0 +1,17 @@
+This program was written to:
+
+1. predict user's next app (by using src/PredictTester.java)
+2. decode user's HMM (by using src/HMMTester.java)
+
+To use PredictTester, you need:
+    1. user app using log. [format: <num> <app_name>]
+        num: 0 for use, 1 for install, 2 for delete
+    2. [Optional] name for generated model
+    3. [Optional] path for loading pre-gen model
+
+To use HMMTester, you need:
+    1. emission sequence file path [A sequence of App Catagory]
+    2. state sequence file path
+    3. [Optional] name for generated model
+    4. [Optional] load pre-generated model (path)
+

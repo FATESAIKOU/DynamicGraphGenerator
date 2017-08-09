@@ -1,3 +1,15 @@
+/*
+ * This program was written to generate HMM sequence with model built with <Emission Seq> and <State Seq>.
+ * 
+ * @author: Eric Chiang
+ *
+ * @Args:
+ *  - 1: emission sequence file path
+ *  - 2: state sequence file path
+ *  - 3: [Optional] name for saved model (path)
+ *  - 4: [Optional] load pre-generated model (path)
+ */
+
 import java.util.*;
 import java.io.*;
 import org.json.*;

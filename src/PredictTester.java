@@ -1,3 +1,14 @@
+/*
+ * This program was written to predict user's next app.
+ * 
+ * @author: Eric Chiang
+ *
+ * @Args:
+ *  - 1: user's app using log
+ *  - 2: [Optional] name for saved model (path)
+ *  - 3: [Optional] load pre-generated model (path)
+ */
+
 import java.io.*;
 import java.util.*;
 import org.json.*;
