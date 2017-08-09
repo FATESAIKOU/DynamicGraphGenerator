@@ -1,3 +1,4 @@
+import java.util.*;
 import java.io.*;
 import org.json.*;
 
@@ -8,7 +9,7 @@ public class HMMTester
     public static void main(String[] args)
     {
         HMMTester hmmt;
-        String emmit_seq_file = args[1];
+        String emit_seq_file = args[1];
         String state_seq_file = args[2];
         String model_name = args[3];
         System.out.println("Init");
@@ -18,18 +19,17 @@ public class HMMTester
             hmmt = new HMMTester(args[4]);
         } else {
             hmmt = new HMMTester();
-            hmmt.process(emmit_seq_file, state_seq_file);
+            hmmt.process(emit_seq_file, state_seq_file);
         }
         System.out.println("Load Model End");
 
 
         // Test Model
-        hmmt.initTest();
-        hmmt.test(emmit_seq_file, state_seq_file);
+        List<String> predict_seq = hmmt.test(emit_seq_file, state_seq_file);
         System.out.println("Testing Model");
 
         // Report
-        hmmt.report();
+        hmmt.report(predict_seq);
         System.out.println("Reporting");
 
         // Save Model
@@ -52,29 +52,39 @@ public class HMMTester
         }
     }
 
-    public void process(String emmit_seq_file, String state_seq_file)
+    public void process(String emit_seq_file, String state_seq_file)
     {
         try {
-            hmm.genCounts(state_seq_file, emmit_seq_file);
+            hmm.genCounts(state_seq_file, emit_seq_file);
         } catch (IOException e) {
             System.out.println("Something went wrong :)");
             e.printStackTrace();
         }
     }
 
-    public void initTest()
+    public List<String> test(String test_emit_seq, String test_state_seq)
     {
-        // Init vars for testing
+        try {
+            return hmm.getSeq(test_emit_seq);
+        } catch (IOException e) {
+            System.out.println("Something went wrong :)");
+            e.printStackTrace();
+            return null;
+        }
     }
 
-    public void test(String test_emmit_seq, String test_state_seq)
+    public void report(List<String> seq)
     {
-        // Testing
-    }
-
-    public void report()
-    {
-        // Report testing result
+        try {
+            PrintWriter writer = new PrintWriter("result_seq", "UTF-8");
+            for (String state : seq) {
+                writer.println(state);
+            }
+            writer.close();
+        } catch (IOException e) {
+            System.out.println("Something went wrong :)");
+            e.printStackTrace();
+        }
     }
 
     public void save(String model_name)

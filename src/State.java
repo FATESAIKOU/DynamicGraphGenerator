@@ -71,9 +71,24 @@ public class State implements Comparable<State> {
         }
     }
 
+
     @Override
     public int compareTo(State s) {
         return Integer.compare(s.count, count);
+    }
+
+    public State getChild(String[] path, int idx) {
+        if (idx == path.length || path[idx] == null) {
+            return this;
+        } else if (routes != null && routes.get(path[idx]) != null) {
+            return routes.get(path[idx]).getChild(path, idx + 1);
+        } else {
+            return null;
+        }
+    }
+
+    public Map<String, State> getRoutes() {
+        return routes;
     }
 
     public String getName() {
